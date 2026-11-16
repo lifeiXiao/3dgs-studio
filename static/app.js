@@ -121,15 +121,17 @@ function drawChart(c,rows,key,color){
     const values=rows.flatMap(row=>[row[key],...(secondary?[row['val_'+key]]:[])]).filter(Number.isFinite);
     const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
     const span=Math.max(max-min,.001),lo=Math.max(key==='ssim'?-1:0,min-span*.12),hi=key==='ssim'?Math.min(1,max+span*.12):max+span*.12;
+    c.metricChart={rows,key,color,secondary,lo,hi,l,r,t,b,w,h};
     for(let i=0;i<4;i++){
         const y=t+(h-t-b)*i/3;ctx.beginPath();ctx.moveTo(l,y);ctx.lineTo(w-r,y);ctx.strokeStyle='#2b3338';ctx.setLineDash([3,4]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#707e87';ctx.fillText((hi-(hi-lo)*i/3).toFixed(key==='psnr'?1:3),0,y+3);
     }
     ctx.fillStyle='#617079';ctx.fillText('0',l,h-3);ctx.textAlign='right';ctx.fillText(rows.length?String(rows.at(-1).step):'STEPS',w-r,h-3);ctx.textAlign='left';
-    if(!values.length){ctx.fillStyle='#64716b';ctx.textAlign='center';ctx.fillText(['ssim','lpips'].includes(key)?'等待固定评测 / 可补算历史指标':'等待训练数据',w/2,h/2);ctx.textAlign='left';return;}
+    if(!values.length){ctx.fillStyle='#64716b';ctx.textAlign='center';ctx.fillText(['ssim','lpips'].includes(key)?'等待固定评测 / 可补算历史指标':'等待训练数据',w/2,h/2);ctx.textAlign='left';if(c.metricTooltip)c.metricTooltip.hidden=true;return;}
     for(const [field,stroke,dashed] of [[key,color,false],...(secondary?[['val_'+key,'#b39bec',true]]:[])]){
         const coords=rows.filter(row=>Number.isFinite(row[field])).map(row=>[l+(w-l-r)*row.step/Math.max(rows.at(-1).step,1),t+(h-t-b)*(1-(row[field]-lo)/(hi-lo))]);
         if(!coords.length)continue;ctx.beginPath();coords.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.strokeStyle=stroke;ctx.lineWidth=1.6;ctx.setLineDash(dashed?[4,3]:[]);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(...coords.at(-1),2.5,0,Math.PI*2);ctx.fillStyle=stroke;ctx.fill();
     }
+    if(typeof paintChartHover==='function')paintChartHover(c);
 }
 function resizeAll(){drawScene();drawChart($('lossChart'),lastMetrics,'loss','#cbf484');drawChart($('psnrChart'),lastMetrics,'psnr','#cbf484');drawChart($('ssimChart'),lastQualityMetrics,'ssim','#cbf484');drawChart($('lpipsChart'),lastQualityMetrics,'lpips','#cbf484')}new ResizeObserver(resizeAll).observe($('viewport'));window.addEventListener('resize',resizeAll);
 let officialDefaults={};

@@ -4,9 +4,10 @@ const noop=()=>{},elements=new Map(),callbacks=new Map();let clock=1000,nextId=0
 function element(id){
     if(elements.has(id))return elements.get(id);
     const el={id,hidden:false,disabled:false,value:'',textContent:'',style:{},dataset:{},
-        classList:{toggle:noop},options:[{},{},{}],addEventListener:noop,setAttribute:noop,
-        getBoundingClientRect:()=>({width:1160,height:440}),setPointerCapture:noop,
-        querySelector:()=>element(id+'-option'),replaceChildren(...children){this.children=children;this.options=children;},append:noop,
+        classList:{toggle:noop},options:[{},{},{}],events:{},addEventListener(type,handler){this.events[type]=handler;},setAttribute:noop,
+        getBoundingClientRect:()=>({left:0,top:0,width:1160,height:440}),setPointerCapture:noop,
+        get parentElement(){return element(id+'-parent');},
+        querySelector:()=>element(id+'-option'),replaceChildren(...children){this.children=children;this.options=children;},append(...children){this.children=(this.children||[]).concat(children);},
         getContext:()=>new Proxy({},{get:()=>noop,set:()=>true})};
     elements.set(id,el);return el;
 }
@@ -23,6 +24,7 @@ const app=fs.readFileSync('static/app.js','utf8');
 run(app.slice(0,app.indexOf('action(async()=>{const [sys,preset]')));
 run(fs.readFileSync('static/novel-view.js','utf8'));
 run(fs.readFileSync('static/scene-playback.js','utf8'));
+run(fs.readFileSync('static/chart-hover.js','utf8'));
 function tick(ms){clock+=ms;run(`tickScenePlayback(${clock})`);}
 async function test(){
     // Old runs without 3D history still play a full, multi-angle orbit in tab 1.
@@ -91,6 +93,16 @@ async function test(){
     // Quality charts retain fixed-camera comparisons in both display modes.
     run("$('metricMode').value='fixed';fixedMetrics=[{step:0,train_loss:.4,train_psnr:8,train_ssim:.2,val_ssim:.15,train_lpips:.5,val_lpips:.6},{step:1000,train_loss:.1,train_psnr:25,train_ssim:.9,val_ssim:.85,train_lpips:.1,val_lpips:.15}];renderMetrics()");
     assert.equal(element('ssimTrend').textContent,'0.8500');assert.equal(element('lpipsTrend').textContent,'0.1500');
+    for(const [id,name,train,val]of [['ssimChart','SSIM','0.9000','0.8500'],['lpipsChart','LPIPS','0.1000','0.1500']]){
+        const canvas=element(id);canvas.events.pointermove({clientX:1000,clientY:100});
+        assert.equal(canvas.metricHoverStep,1000);assert.equal(canvas.metricTooltip.hidden,false);
+        assert.ok(canvas.metricTooltip.children[0].textContent.includes(name));
+        assert.ok(canvas.metricTooltip.children[0].textContent.includes('1,000'));
+        assert.equal(canvas.metricTooltip.children[1].children[1].textContent,train);
+        assert.equal(canvas.metricTooltip.children[2].children[1].textContent,val);
+        canvas.events.keydown({key:'ArrowLeft',preventDefault:noop});assert.equal(canvas.metricHoverStep,0);
+        canvas.events.pointerleave();assert.equal(canvas.metricTooltip.hidden,true);
+    }
     run("$('metricMode').value='train';rawMetrics=[{step:1000,loss:.08,loss_ema:.1,psnr:24}];renderMetrics()");
     assert.equal(element('ssimTrend').textContent,'0.8500');assert.equal(element('lpipsTrend').textContent,'0.1500');
     run('fixedMetrics=[{step:0,train_loss:.4,train_psnr:8}];renderMetrics()');
