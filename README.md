@@ -2,6 +2,24 @@
 
 本地 3D Gaussian Splatting 训练工作台：目录导入、图片自动 COLMAP、GPU 训练、固定相机评测、实时渲染、训练动画和模型导出。
 
+## 可视化展示
+
+**多视角环绕预览**：完整高斯模型的 72 个实际渲染视角。网页中可播放、暂停、拖拽和缩放。
+
+![Lego 多视角环绕动画](docs/assets/orbit.gif)
+
+**训练阶段演变**：固定参考视角下，从 0 到 30000 步的 31 个真实模型快照。叠加指标为固定验证相机的均值；网页中可用 Step 下拉框保持同视角切换阶段。
+
+![Lego 训练过程动画](docs/assets/training.gif)
+
+**实际训练曲线**：原始 800×800 Lego，固定 8 个训练和 8 个验证视角。网页的 Loss、PSNR、SSIM、LPIPS 曲线均支持鼠标悬浮，查看对应 Step、指标和训练 / 验证值。
+
+![Lego 真实训练指标](docs/assets/training-metrics.png)
+
+展示素材来自实际模型与评测数据，生成方式与来源见 [素材说明](docs/assets/SOURCE.md)。
+
+## 快速启动
+
 ```bash
 git clone https://github.com/lifeiXiao/3dgs-studio.git
 cd 3dgs-studio
@@ -116,6 +134,7 @@ NeRF Synthetic Lego 可通过下列脚本下载 train / val / test 与准确位�
 - `studio/runtime.py`：项目内 CUDA 编译缓存和兼容编译器选择；ABI 匹配时复用已编译模块。
 
 ```bash
+.venv/bin/python -m pip install pytest
 .venv/bin/python -m pytest -q
 node --check static/app.js
 .venv/bin/python -m pip check
